@@ -38,10 +38,11 @@ jobs:
             -o /dev/null -w "auth health: %{http_code}\n"
 
           # 2) keepalive テーブルへ実クエリを投げ、DB活動を確実に発生させる
+          #    新方式キー(sb_publishable_...)はJWTではないため Authorization: Bearer では弾かれる。
+          #    apikey ヘッダのみ送る（新方式・Legacy anon JWT の両対応）。
           echo "Querying keepalive table to register DB activity..."
           curl -fsS "${SUPABASE_URL}/rest/v1/keepalive?select=id&limit=1" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
             -o /dev/null -w "rest query: %{http_code}\n"
 
           echo "Keepalive ping complete."

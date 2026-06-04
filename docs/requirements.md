@@ -322,7 +322,7 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 |---|---|---|
 | item_id | uuid (PK) | UUIDv7 |
 | user_id | uuid (FK) | 所有ユーザー → auth.users.id |
-| collection_id | uuid (FK, nullable) | 所属コレクション |
+| collection_id | uuid (FK, nullable) | 所属コレクション。任意の関連（0..1）で **NULL=未分類/既定**。`ON DELETE SET NULL` |
 | source_text | text | 保存した英語原文 |
 | item_type | text | `word`（英単語）/ `phrase`（英語フレーズ） |
 | input_method | text | `share` / `manual` / `voice` |

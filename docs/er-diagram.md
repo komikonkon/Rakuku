@@ -36,7 +36,7 @@ erDiagram
     ITEMS {
         uuid        item_id       PK "UUIDv7"
         uuid        user_id       FK "所有ユーザー → auth.users.id"
-        uuid        collection_id FK "所属コレクション（nullable）"
+        uuid        collection_id FK "所属コレクション（任意の関連 0..1。NULL=未分類/既定）"
         text        source_text   "保存した英語原文"
         text        item_type     "word | phrase"
         text        input_method  "share | manual | voice"
@@ -102,6 +102,13 @@ erDiagram
 - **`updated_at`** … **更新が発生するテーブルにのみ付与**（`items` / `explanations`〔再生成〕/ `collections`〔リネーム〕/ `review_states`〔復習更新〕）。`audios` は生成後に変化しない不変レコードのため付けない。更新時は `updated_at = now()` をアプリ or トリガで設定。
   - `review_states` は汎用の `updated_at` と、ドメイン上の意味を持つ `last_reviewed_at`（復習した日時）を**別々に**持つ。
 - **`created_by` / `updated_by` は持たない**。各行は `user_id` で所有者が1人に固定される個人データのため、作成者・更新者は常に `user_id` と一致し冗長。将来「単語帳の共有・共同編集」を実装する場合に導入する。
+
+### FKのNULL可否
+
+- **FK制約とNOT NULLは独立**。FKは「値があれば参照先に存在する」ことのみ保証し、NULLは「関連なし」を表すため違反にならない。
+- **必須の関連は NOT NULL**：`items.user_id` / `explanations.item_id` / `audios.item_id` / `review_states.item_id` / `review_states.user_id` / `collections.user_id`。親が無い子は存在し得ない。
+- **任意の関連は nullable**：`items.collection_id` のみ（NULL=未分類/既定）。MVPは既定コレクション行を作らず、未指定保存を許す。
+- **削除時の挙動**：`items.collection_id` は `ON DELETE SET NULL`（コレクション削除でアイテムは未分類化、消えない）。必須FKは `ON DELETE CASCADE`（親アイテム削除で解説・音声・学習状態も削除）。
 
 ---
 

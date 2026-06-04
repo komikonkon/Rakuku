@@ -101,7 +101,7 @@ flowchart LR
 
 ## 3. 復習フロー（タイピング想起）
 
-> 出題 → 操作 → ステータス更新 → 次の問題、を繰り返す。ステータスは結果に応じて4色に分岐。
+> 出題 → 操作 → ステータス更新 → 次の問題、を繰り返す。「回答する」は何度でも押せ、初回で外すと不正解だが、正解を打ち切るまで次へ進めない。
 
 ```mermaid
 %%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 35, 'rankSpacing': 55}}}%%
@@ -110,13 +110,15 @@ flowchart TD
     Q --> Op{"ユーザー操作"}:::dec
 
     Op -- ヒント --> Hint["先頭1文字を表示"]:::proc --> Q
-    Op -- 英語を入力 --> Judge{"完全一致?"}:::dec
-    Op -- 答えを見る --> Reveal["灰色で全文表示"]:::proc
+    Op -- 答えを見る --> Reveal["灰色ゴースト表示<br/>誤字ブロック(タイプ強制)"]:::proc --> Typed["正解を打ち切る"]:::proc --> SWeak2["status=苦手<br/>正否=✗"]:::weak
+    Op -- 回答する --> Judge{"完全一致?"}:::dec
 
-    Judge -- 正解・ヒント未使用 --> SLearned["status = 覚えた"]:::learned
-    Judge -- 正解・ヒント使用 --> SVague["status = うろ覚え"]:::vague
-    Judge -- 不正解 --> SWeak["status = 苦手"]:::weak
-    Reveal --> SWeak2["status = 苦手"]:::weak
+    Judge -- 不一致 --> Wrong["初回なら正否=✗ を記録<br/>(次へは進めない)"]:::proc --> Q
+    Judge -- 一致 --> Mark{"初回で一致?"}:::dec
+
+    Mark -- はい・ヒント未使用 --> SLearned["status=覚えた<br/>正否=○"]:::learned
+    Mark -- はい・ヒント使用 --> SVague["status=うろ覚え<br/>正否=○"]:::vague
+    Mark -- いいえ(再回答で一致) --> SWeak["status=苦手<br/>正否=✗"]:::weak
 
     SLearned --> Next{"残り問題?"}:::dec
     SVague --> Next
@@ -124,7 +126,7 @@ flowchart TD
     SWeak2 --> Next
 
     Next -- あり --> Q
-    Next -- なし --> Result["結果表示<br/>(正答数・ステータス内訳)"]:::screen
+    Next -- なし --> Result["結果表示<br/>出題アイテム一覧＋正否(○/✗)<br/>正答数・ステータス内訳"]:::screen
 
     classDef screen  fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
     classDef proc    fill:#E0F2F1,stroke:#00897B,color:#004D40;
@@ -134,7 +136,7 @@ flowchart TD
     classDef weak    fill:#FFCDD2,stroke:#C62828,color:#B71C1C;
 ```
 
-> ⚪ 未復習 は「復習0回」の初期状態（図では遷移後のため省略）。判定の詳細は要件定義書 §5.9 を参照。
+> ⚪ 未復習 は「復習0回」の初期状態（図では遷移後のため省略）。正否（`last_correct`）は**初回の「回答する」で一致したか**で確定する。判定の詳細は要件定義書 §5.9 を参照。
 
 ---
 
@@ -149,8 +151,8 @@ flowchart TD
 | 音声入力 | 発話、認識候補リスト、選択、保存 | → ホーム |
 | 保存ミニUI（共有経由） | 受信テキスト確認、保存、トースト | → 元アプリ（任意でホーム） |
 | 復習設定 | 出題数選択（5/10/20/50/100）、対象（全件/ブックマーク）、開始 | → 復習セッション |
-| 復習セッション | 意味提示、英語入力、ヒント、答えを見る | → 結果 |
-| 結果 | 正答数、ステータス内訳、もう一度/終了 | → 復習設定 / ホーム |
+| 復習セッション | 意味提示、英語入力、回答する（何度でも可）、ヒント、答えを見る（ゴースト＋タイプ強制） | → 結果 |
+| 結果 | 出題アイテム一覧＋正否（○/✗）、正答数、ステータス内訳、各行→詳細、もう一度/終了 | → アイテム詳細 / 復習設定 / ホーム |
 | 設定 / アカウント | ログイン状態、Googleログイン（昇格）、各種設定 | → ホーム |
 
 ---

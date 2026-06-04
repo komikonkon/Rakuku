@@ -312,6 +312,7 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 
 > 詳細なカラム・制約は実装時に確定。RLSは全テーブルで `user_id = auth.uid()` を基本とする。
 > **PK規約**：PK名は `<entity>_id`（粒度明示）、型は **UUIDv7**（時系列・クライアント生成可）。Supabase管理の `auth.users.id` のみ `id`。詳細は [ER図](./er-diagram.md) を参照。
+> **監査列**：`created_at` は全テーブル。`updated_at` は更新が起きるテーブルのみ（`audios` は不変なので無し）。`created_by`/`updated_by` は個人データ（所有者＝`user_id`）のため持たない（共有・共同編集を実装する際に導入）。
 
 ### users（Supabase Auth 管理）
 - 認証はSupabase Authが管理。アプリ固有のプロフィールが必要なら `profiles` を追加。
@@ -343,6 +344,7 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 | examples | jsonb | 例文配列 `[{en, ja}]` |
 | model | text | 生成モデル名 |
 | created_at | timestamptz | |
+| updated_at | timestamptz | 再生成で更新 |
 
 ### audios（音声）
 | カラム | 型 | 説明 |
@@ -365,6 +367,8 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 | last_revealed | boolean (nullable) | 直近で答えを見たか |
 | last_correct | boolean (nullable) | 直近で正解したか |
 | review_count | int | 復習回数 |
+| created_at | timestamptz | |
+| updated_at | timestamptz | 復習のたびに更新（汎用）。`last_reviewed_at` は意味上の復習日時 |
 | (将来) srs_* | - | SRS用フィールドの拡張余地 |
 
 > `status` は直近1回の結果（`last_*`）から §5.9 のルールで導出して保存する。出題順は §6.11 のステータス優先度に従う。
@@ -376,6 +380,7 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 | user_id | uuid (FK) | → auth.users.id |
 | name | text | |
 | created_at | timestamptz | |
+| updated_at | timestamptz | リネーム等で更新 |
 
 ---
 

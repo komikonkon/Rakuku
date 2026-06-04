@@ -30,6 +30,7 @@ erDiagram
         uuid        user_id       FK "所有ユーザー → auth.users.id"
         text        name          "単語帳名（MVPは既定1件）"
         timestamptz created_at
+        timestamptz updated_at     "リネーム等で更新"
     }
 
     ITEMS {
@@ -56,6 +57,7 @@ erDiagram
         jsonb       examples       "例文 [{en, ja}]"
         text        model          "生成モデル名"
         timestamptz created_at
+        timestamptz updated_at      "再生成で更新"
     }
 
     AUDIOS {
@@ -76,6 +78,8 @@ erDiagram
         boolean     last_revealed    "直近で答えを見た（nullable）"
         boolean     last_correct     "直近で正解（nullable）"
         int         review_count     "復習回数"
+        timestamptz created_at
+        timestamptz updated_at       "復習のたびに更新（汎用）。意味的な復習日時は last_reviewed_at"
     }
 ```
 
@@ -91,6 +95,13 @@ erDiagram
   - v7は先頭が時刻順で**単調増加に近く、B-treeの挿入局所性が良い**（v4のランダム性によるインデックス肥大を回避）。
   - 列挙されにくくセキュア。
 - **生成方法**：クライアント（Dart）でUUIDv7を生成して保存するのを基本とする。DB側デフォルトは保険として、`uuidv7()`（Postgres 18）または `pg_uuidv7` 拡張を利用。利用可否は実装時に確認（不可なら一時的に `gen_random_uuid()`＝v4で代替し、後日v7へ）。
+
+### 監査列（created_at / updated_at / created_by）の方針
+
+- **`created_at`** … 全テーブルに付与。
+- **`updated_at`** … **更新が発生するテーブルにのみ付与**（`items` / `explanations`〔再生成〕/ `collections`〔リネーム〕/ `review_states`〔復習更新〕）。`audios` は生成後に変化しない不変レコードのため付けない。更新時は `updated_at = now()` をアプリ or トリガで設定。
+  - `review_states` は汎用の `updated_at` と、ドメイン上の意味を持つ `last_reviewed_at`（復習した日時）を**別々に**持つ。
+- **`created_by` / `updated_by` は持たない**。各行は `user_id` で所有者が1人に固定される個人データのため、作成者・更新者は常に `user_id` と一致し冗長。将来「単語帳の共有・共同編集」を実装する場合に導入する。
 
 ---
 

@@ -7,11 +7,18 @@
 - **最終更新**: 2026-06-04
 - **関連**: [要件定義書](./requirements.md) ／ [画面遷移図](./screen-flow.md)
 
+### 図の読み方（レイアウト規約）
+
+- **視線は左上→右下**。番号（①②③④）の順に読む。
+- 主フローは**実線・一方向**、補助連携（端末機能・将来・運用）は**点線**。
+- 線は**直線（折れ線）**で表示し、交差を最小化。色は意味ごとに固定（下記凡例）。
+
 ---
 
 ## 凡例（色の意味）
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
 flowchart LR
     L_app["Flutter アプリ"]:::app
     L_sb["Supabase"]:::sb
@@ -34,88 +41,91 @@ flowchart LR
 
 ## 1. 全体構成図
 
-> フローは上から下へ：**入力（OS）→ アプリ → Supabase → 外部API**。点線は補助的な連携（端末機能・将来・運用）。
+> ① 入力（OS）→ ② アプリ → ③ Supabase → ④ データ/外部、の順に左→右へ流れる。点線は補助連携。
 
 ```mermaid
-flowchart TB
-    subgraph OS["端末 / OS"]
-        direction LR
-        OtherApps["他アプリ<br/>(Safari / SNS / 記事)"]:::os
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 45, 'rankSpacing': 75}}}%%
+flowchart LR
+    subgraph OS["① 端末 / OS（入力）"]
+        direction TB
+        OtherApps["他アプリ<br/>(Safari/SNS/記事)"]:::os
         ShareSheet["共有シート / インテント"]:::os
-        STT["端末STT<br/>(音声認識)"]:::os
-        TTS["端末TTS<br/>(音声合成)"]:::os
+        STT["端末STT（音声認識）"]:::os
+        TTS["端末TTS（音声合成）"]:::os
     end
 
-    subgraph App["Flutter アプリ (Dart)"]
+    subgraph App["② Flutter アプリ"]
         direction TB
-        UI["UI層<br/>(一覧/詳細/保存/復習/設定)"]:::app
-        ShareExt["共有受け取り<br/>(Share Extension / ACTION_SEND)"]:::app
-        Repo["Repository層<br/>(Item / Review など)"]:::app
-        Clients["抽象クライアント<br/>AiClient / AudioClient / StorageClient"]:::app
+        ShareExt["共有受け取り"]:::app
+        UI["UI層"]:::app
+        Repo["Repository層"]:::app
+        Clients["抽象クライアント<br/>Ai / Audio / Storage"]:::app
         SDK["Supabase SDK"]:::app
     end
 
-    subgraph SB["Supabase (BaaS)"]
+    subgraph SB["③ Supabase"]
         direction TB
-        Auth["Auth (GoTrue)<br/>匿名 + Google"]:::sb
-        REST["PostgREST<br/>(自動生成API)"]:::sb
-        Edge["Edge Functions<br/>(TypeScript / Deno)"]:::sb
-        DB[("PostgreSQL<br/>+ RLS")]:::sb
-        Storage["Storage<br/>(将来のクラウド音声)"]:::sb
+        Auth["Auth<br/>匿名 + Google"]:::sb
+        REST["PostgREST（自動API）"]:::sb
+        Edge["Edge Functions（TS）"]:::sb
     end
 
-    Claude["Claude API<br/>(Anthropic)"]:::ext
-    GHA["GitHub Actions<br/>日次 keepalive"]:::ops
+    subgraph Data["④ データ / 外部"]
+        direction TB
+        DB[("PostgreSQL + RLS")]:::sb
+        Storage["Storage（将来）"]:::sb
+        Claude["Claude API"]:::ext
+    end
 
-    %% --- 主フロー（実線・基本は下方向） ---
+    %% 主フロー（実線・左→右）
     OtherApps --> ShareSheet --> ShareExt --> Repo
     UI --> Repo --> Clients --> SDK
-    SDK -->|認証| Auth
-    SDK -->|CRUD（RLSで本人のみ）| REST --> DB
-    SDK -->|invoke| Edge
-    Edge -->|APIキーを秘匿して呼出| Claude
-    Edge -->|解説を INSERT| DB
+    SDK --> Auth
+    SDK --> REST --> DB
+    SDK --> Edge
+    Edge --> DB
+    Edge --> Claude
 
-    %% --- 補助フロー（点線） ---
-    UI -. 音声入力→候補 .-> STT
+    %% 補助連携（点線）
+    UI -. 音声入力 .-> STT
     Clients -. 音声合成 .-> TTS
-    Clients -. 将来クラウドTTS .-> Storage
-    GHA -. 日次ping .-> Auth
-    GHA -. keepalive SELECT .-> REST
+    Clients -. 将来 .-> Storage
 
     classDef app  fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
     classDef sb   fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20;
     classDef ext  fill:#FFF3E0,stroke:#EF6C00,color:#E65100;
     classDef os   fill:#ECEFF1,stroke:#546E7A,color:#263238;
-    classDef ops  fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C;
 
-    style OS  fill:#FAFAFA,stroke:#B0BEC5
-    style App fill:#F5FAFE,stroke:#90CAF9
-    style SB  fill:#F4FBF5,stroke:#A5D6A7
+    style OS   fill:#FAFAFA,stroke:#B0BEC5
+    style App  fill:#F5FAFE,stroke:#90CAF9
+    style SB   fill:#F4FBF5,stroke:#A5D6A7
+    style Data fill:#F4FBF5,stroke:#A5D6A7
 ```
+
+> 運用（keepalive）は独立した補助系のため §6 に分離して記載。
 
 ### 登場人物と役割
 
 | 区分 | 要素 | 役割 |
 |---|---|---|
-| 端末/OS | 共有シート/インテント | 他アプリから「共有」でRakukuへテキストを送る入口 |
-| 端末/OS | 端末STT | アプリ内音声入力。認識候補を返しユーザーが選択 |
-| 端末/OS | 端末TTS | 発音確認の音声合成（無料・オフライン） |
-| アプリ | UI層 | 画面・操作 |
-| アプリ | Repository層 | データアクセスを集約（ベンダー直叩きを隠蔽し移植性を確保） |
-| アプリ | 抽象クライアント | AI/音声/ストレージを差し替え可能にするインターフェース |
-| Supabase | Auth | 匿名サインイン＋Googleログイン＋昇格 |
-| Supabase | PostgREST | テーブルから自動生成されるREST API（自前API不要） |
-| Supabase | PostgreSQL+RLS | データ本体。RLSで「自分のデータのみ」を強制 |
-| Supabase | Edge Functions | 秘密鍵が要る処理のみ（Claude中継） |
-| 外部 | Claude API | 解説・コアイメージ・例文の生成 |
-| 運用 | GitHub Actions | 無料枠の凍結回避（日次ping） |
+| ① 端末/OS | 共有シート/インテント | 他アプリから「共有」でRakukuへテキストを送る入口 |
+| ① 端末/OS | 端末STT | アプリ内音声入力。認識候補を返しユーザーが選択 |
+| ① 端末/OS | 端末TTS | 発音確認の音声合成（無料・オフライン） |
+| ② アプリ | UI層 | 画面・操作 |
+| ② アプリ | Repository層 | データアクセスを集約（ベンダー直叩きを隠蔽し移植性を確保） |
+| ② アプリ | 抽象クライアント | AI/音声/ストレージを差し替え可能にするインターフェース |
+| ③ Supabase | Auth | 匿名サインイン＋Googleログイン＋昇格 |
+| ③ Supabase | PostgREST | テーブルから自動生成されるREST API（自前API不要） |
+| ③ Supabase | Edge Functions | 秘密鍵が要る処理のみ（Claude中継） |
+| ④ データ/外部 | PostgreSQL+RLS | データ本体。RLSで「自分のデータのみ」を強制 |
+| ④ データ/外部 | Claude API | 解説・コアイメージ・例文の生成 |
 
 ---
 
 ## 2. 実装言語・責務の分離
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'rankSpacing': 70}}}%%
 flowchart LR
     Dart["Dart<br/>Flutterアプリ全般<br/>(UI / Repository / SDK呼び出し)"]:::app
     TS["TypeScript<br/>Edge Functions<br/>(秘密鍵が要る処理のみ)"]:::sb
@@ -190,13 +200,14 @@ sequenceDiagram
 ## 5. フロー：認証（匿名スタート → Google昇格）
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'rankSpacing': 65}}}%%
 flowchart LR
-    Start(["初回起動"]):::os --> Anon["匿名サインイン<br/>(即利用開始・ログイン不要)"]:::app
-    Anon --> Use["保存・復習<br/>(データは匿名user_idに紐づく)"]:::app
+    Start(["初回起動"]):::os --> Anon["匿名サインイン<br/>(即利用開始)"]:::app
+    Anon --> Use["保存・復習<br/>(匿名user_idに紐づく)"]:::app
     Use --> Q{"Googleログイン?"}:::dec
     Q -- いいえ --> Use
-    Q -- はい --> Upgrade["匿名 → Google 昇格<br/>(同一ユーザーとしてデータ引き継ぎ)"]:::sb
-    Upgrade --> Sync["複数端末で同期<br/>(RLSで本人データのみ)"]:::sb
+    Q -- はい --> Upgrade["匿名 → Google 昇格<br/>(データ引き継ぎ)"]:::sb
+    Upgrade --> Sync["複数端末で同期<br/>(RLSで本人のみ)"]:::sb
 
     classDef os  fill:#ECEFF1,stroke:#546E7A,color:#263238;
     classDef app fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
@@ -209,16 +220,16 @@ flowchart LR
 ## 6. 構成：Supabase 凍結回避（keepalive）
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'rankSpacing': 65}}}%%
 flowchart LR
-    Cron["GitHub Actions<br/>cron 毎日 06:00 UTC"]:::ops -->|GET /auth/v1/health| Auth["Supabase Auth"]:::sb
-    Cron -->|SELECT keepalive| REST["PostgREST"]:::sb --> DB[("PostgreSQL")]:::sb
+    Cron["GitHub Actions<br/>cron 毎日 06:00 UTC"]:::ops --> Auth["Supabase Auth<br/>GET /auth/v1/health"]:::sb
+    Cron --> REST["PostgREST<br/>SELECT keepalive"]:::sb --> DB[("PostgreSQL")]:::sb
 
     classDef ops fill:#F3E5F5,stroke:#7B1FA2,color:#4A148C;
     classDef sb  fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20;
 ```
 
 > プロジェクト停止を防ぐには**外部からの定期アクセスが必須**。詳細は要件定義書 §13 を参照。
-> スケジュール実行はデフォルトブランチのワークフローのみ動作するため、マージが必要。
 
 ---
 

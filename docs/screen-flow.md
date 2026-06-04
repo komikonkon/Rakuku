@@ -2,17 +2,23 @@
 
 > 本書は `docs/requirements.md`（要件定義書 v1.1）に基づく画面遷移のビジュアル資料。
 > 図は GitHub 上で Mermaid として描画される。UIのルック（色・トーン）はプロト先行で別途決定し、本書は**構造（遷移）**を定義する。
-> 線を減らすため、**画面内で完結する操作はノード内に併記**し、線は**画面が切り替わる遷移のみ**を示す。
 
 - **対象**: Rakuku MVP
 - **最終更新**: 2026-06-04
 - **関連**: [要件定義書](./requirements.md) ／ [システム構成図](./architecture.md)
+
+### 図の読み方（レイアウト規約）
+
+- **視線は上→下／左→右**。ホームを起点に主要フローへ枝分かれする。
+- 線は**直線（折れ線）**・**前進方向のみ**。「戻る」「削除後の一覧復帰」は共通操作のため**線を省略**（各画面からホームへ戻れる）。
+- 画面内で完結する操作は**ノード内に併記**して線を増やさない。
 
 ---
 
 ## 凡例（色の意味）
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
 flowchart LR
     L_scr["画面"]:::screen
     L_proc["処理 / 保存"]:::proc
@@ -34,30 +40,22 @@ flowchart LR
 
 ## 1. 全体の画面遷移
 
+> ホームを起点に、**5つの主要フローが平行に下へ**伸びる。戻る操作は省略。
+
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 40, 'rankSpacing': 55}}}%%
 flowchart TD
     Launch(["アプリ起動"]):::term --> AuthChk{"セッション有り?"}:::dec
-    AuthChk -- なし --> Anon["匿名サインイン（自動）"]:::proc --> Home
     AuthChk -- あり --> Home
+    AuthChk -- なし --> Anon["匿名サインイン（自動）"]:::proc --> Home
 
     Home["ホーム / アイテム一覧<br/>(ステータスバッジ・ブックマーク絞り込み)"]:::screen
 
-    Home -->|タップ| Detail["アイテム詳細<br/>(意味/コアイメージ/例文/音声再生<br/>ブックマークON/OFF・再生成)"]:::screen
-    Home -->|＋ 手動入力| AddManual["手動入力で追加"]:::screen
-    Home -->|音声入力| Voice["音声入力（端末STT）"]:::screen
-    Home -->|復習| ReviewCfg["復習設定<br/>(出題数 5/10/20/50/100・対象)"]:::screen
-    Home -->|設定| Settings["設定 / アカウント"]:::screen
-
-    AddManual -->|保存| Home
-    Voice --> VoicePick["認識候補から選択"]:::proc -->|保存| Home
-    Detail -->|戻る / 削除| Home
-
-    ReviewCfg -->|開始| Session["復習セッション<br/>(タイピング想起)"]:::screen --> Result["結果"]:::screen
-    Result -->|もう一度| ReviewCfg
-    Result -->|終了| Home
-
-    Settings -->|Googleログイン| Upgrade["匿名 → Google 昇格"]:::proc --> Settings
-    Settings -->|戻る| Home
+    Home --> Detail["アイテム詳細<br/>(意味/コアイメージ/例文/音声再生<br/>ブックマーク・再生成・削除)"]:::screen
+    Home --> AddManual["手動入力で追加"]:::screen --> SaveA["保存 → 一覧へ"]:::proc
+    Home --> Voice["音声入力（端末STT）"]:::screen --> VoicePick["認識候補から選択"]:::screen --> SaveB["保存 → 一覧へ"]:::proc
+    Home --> ReviewCfg["復習設定<br/>(出題数・対象)"]:::screen --> Session["復習セッション<br/>(タイピング想起)"]:::screen --> Result["結果<br/>(もう一度→復習設定 / 終了→一覧)"]:::screen
+    Home --> Settings["設定 / アカウント"]:::screen --> Upgrade["Googleログイン<br/>(匿名→昇格)"]:::proc
 
     classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
     classDef proc   fill:#E0F2F1,stroke:#00897B,color:#004D40;
@@ -72,12 +70,12 @@ flowchart TD
 ### 2-A. 共有から保存（アプリを開かず）
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'rankSpacing': 60}}}%%
 flowchart LR
     Ext(["他アプリで英語を選択<br/>→ 共有ボタン"]):::term --> Sheet(["共有シート / インテントで<br/>Rakuku を選択"]):::term
     Sheet --> MiniUI["保存ミニUI（オーバーレイ）<br/>アプリ本体は開かない"]:::screen
-    MiniUI -->|保存| Done["保存完了（トースト）"]:::proc
+    MiniUI --> Done["保存完了（トースト）"]:::proc
     Done --> BackExt(["元のアプリに戻る"]):::term
-    MiniUI -.->|アプリで開く（任意）| HomeRef["ホーム / 一覧へ"]:::screen
 
     classDef term   fill:#ECEFF1,stroke:#546E7A,color:#263238;
     classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
@@ -87,14 +85,11 @@ flowchart LR
 ### 2-B. 手動入力 ／ 2-C. 音声入力（アプリ内）
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'rankSpacing': 55}}}%%
 flowchart LR
-    Home["ホーム / 一覧"]:::screen -->|＋ 手動入力| Manual["テキスト入力 / 貼り付け"]:::screen
-    Home -->|音声入力| Speak["英語を発話"]:::screen
-
-    Manual --> Save["保存<br/>(gen_status = new)"]:::proc
-    Speak --> STT["端末STTがテキスト化<br/>認識候補を提示"]:::proc --> Pick["候補から選択"]:::screen --> Save
-
-    Save --> Gen["AI生成を非同期で開始"]:::proc --> Back["一覧へ<br/>(生成中はプレースホルダ表示)"]:::screen
+    Manual["手動入力<br/>(テキスト入力/貼り付け)"]:::screen --> Save["保存<br/>(gen_status = new)"]:::proc
+    Speak["音声入力<br/>(英語を発話)"]:::screen --> STT["端末STTがテキスト化<br/>認識候補を提示"]:::proc --> Pick["候補から選択"]:::screen --> Save
+    Save --> Gen["AI生成を非同期で開始"]:::proc --> Back["一覧へ<br/>(生成中はプレースホルダ)"]:::screen
 
     classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
     classDef proc   fill:#E0F2F1,stroke:#00897B,color:#004D40;
@@ -106,20 +101,21 @@ flowchart LR
 
 ## 3. 復習フロー（タイピング想起）
 
-> 出題 → 操作（入力／ヒント／答えを見る）→ ステータス更新 → 次の問題、を繰り返す。ステータスは結果に応じて4色に分岐。
+> 出題 → 操作 → ステータス更新 → 次の問題、を繰り返す。ステータスは結果に応じて4色に分岐。
 
 ```mermaid
+%%{init: {'flowchart': {'curve': 'linear', 'nodeSpacing': 35, 'rankSpacing': 55}}}%%
 flowchart TD
-    Cfg["復習設定<br/>出題数 5/10/20/50/100・対象=全件/ブックマーク"]:::screen --> Q["問題表示<br/>(意味＝日本語)"]:::screen
+    Cfg["復習設定<br/>(出題数 5/10/20/50/100・対象=全件/ブックマーク)"]:::screen --> Q["問題表示<br/>(意味＝日本語)"]:::screen
     Q --> Op{"ユーザー操作"}:::dec
 
-    Op -->|ヒント| Hint["先頭1文字を表示"]:::proc --> Q
-    Op -->|英語を入力| Judge{"完全一致?"}:::dec
-    Op -->|答えを見る| Reveal["灰色で全文表示"]:::proc
+    Op -- ヒント --> Hint["先頭1文字を表示"]:::proc --> Q
+    Op -- 英語を入力 --> Judge{"完全一致?"}:::dec
+    Op -- 答えを見る --> Reveal["灰色で全文表示"]:::proc
 
-    Judge -->|正解・ヒント未使用| SLearned["status = 覚えた"]:::learned
-    Judge -->|正解・ヒント使用| SVague["status = うろ覚え"]:::vague
-    Judge -->|不正解| SWeak["status = 苦手"]:::weak
+    Judge -- 正解・ヒント未使用 --> SLearned["status = 覚えた"]:::learned
+    Judge -- 正解・ヒント使用 --> SVague["status = うろ覚え"]:::vague
+    Judge -- 不正解 --> SWeak["status = 苦手"]:::weak
     Reveal --> SWeak2["status = 苦手"]:::weak
 
     SLearned --> Next{"残り問題?"}:::dec
@@ -127,8 +123,8 @@ flowchart TD
     SWeak --> Next
     SWeak2 --> Next
 
-    Next -->|あり| Q
-    Next -->|なし| Result["結果表示<br/>正答数・ステータス内訳"]:::screen
+    Next -- あり --> Q
+    Next -- なし --> Result["結果表示<br/>(正答数・ステータス内訳)"]:::screen
 
     classDef screen  fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
     classDef proc    fill:#E0F2F1,stroke:#00897B,color:#004D40;

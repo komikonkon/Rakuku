@@ -6,6 +6,7 @@
 - **対象**: Rakuku MVP
 - **最終更新**: 2026-06-04
 - **関連**: [要件定義書](./requirements.md) ／ [画面遷移図](./screen-flow.md)
+- **詳細設計**: [レイヤー・主要クラス](./design/architecture-layers.md) ／ [復習状態遷移](./design/review-state-machine.md) ／ [Edge Function IF](./design/edge-function-claude.md) ／ DDL: `supabase/migrations/`
 
 ### 図の読み方（レイアウト規約）
 

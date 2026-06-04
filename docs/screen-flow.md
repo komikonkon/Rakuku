@@ -2,6 +2,7 @@
 
 > 本書は `docs/requirements.md`（要件定義書 v1.1）に基づく画面遷移のビジュアル資料。
 > 図は GitHub 上で Mermaid として描画される。UIのルック（色・トーン）はプロト先行で別途決定し、本書は**構造（遷移）**を定義する。
+> 線を減らすため、**画面内で完結する操作はノード内に併記**し、線は**画面が切り替わる遷移のみ**を示す。
 
 - **対象**: Rakuku MVP
 - **最終更新**: 2026-06-04
@@ -9,41 +10,59 @@
 
 ---
 
+## 凡例（色の意味）
+
+```mermaid
+flowchart LR
+    L_scr["画面"]:::screen
+    L_proc["処理 / 保存"]:::proc
+    L_dec{"判定 / 分岐"}:::dec
+    L_term(["起動 / 外部入口"]):::term
+
+    L_scr ~~~ L_proc ~~~ L_dec ~~~ L_term
+
+    classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
+    classDef proc   fill:#E0F2F1,stroke:#00897B,color:#004D40;
+    classDef dec    fill:#FFFDE7,stroke:#F9A825,color:#827717;
+    classDef term   fill:#ECEFF1,stroke:#546E7A,color:#263238;
+```
+
+学習ステータスは復習フロー（図3）で次の4色を用いる：
+🟢 覚えた ／ 🟡 うろ覚え ／ 🔴 苦手 ／ ⚪ 未復習
+
+---
+
 ## 1. 全体の画面遷移
 
 ```mermaid
 flowchart TD
-    Launch(["アプリ起動"]) --> AuthChk{"セッション有り?"}
-    AuthChk -- なし --> Anon["匿名サインイン（自動・ログイン不要）"]
-    Anon --> Home
-    AuthChk -- あり --> Home["ホーム / アイテム一覧"]
+    Launch(["アプリ起動"]):::term --> AuthChk{"セッション有り?"}:::dec
+    AuthChk -- なし --> Anon["匿名サインイン（自動）"]:::proc --> Home
+    AuthChk -- あり --> Home
 
-    Home -->|アイテムをタップ| Detail["アイテム詳細"]
-    Home -->|＋ 手動入力| AddManual["手動入力で追加"]
-    Home -->|音声入力| Voice["音声入力（端末STT）"]
-    Home -->|復習| ReviewCfg["復習設定"]
-    Home -->|設定| Settings["設定 / アカウント"]
-    Home -->|フィルタ切替| Filter{"表示対象<br/>全件 / ブックマークのみ"}
-    Filter --> Home
+    Home["ホーム / アイテム一覧<br/>(ステータスバッジ・ブックマーク絞り込み)"]:::screen
+
+    Home -->|タップ| Detail["アイテム詳細<br/>(意味/コアイメージ/例文/音声再生<br/>ブックマークON/OFF・再生成)"]:::screen
+    Home -->|＋ 手動入力| AddManual["手動入力で追加"]:::screen
+    Home -->|音声入力| Voice["音声入力（端末STT）"]:::screen
+    Home -->|復習| ReviewCfg["復習設定<br/>(出題数 5/10/20/50/100・対象)"]:::screen
+    Home -->|設定| Settings["設定 / アカウント"]:::screen
 
     AddManual -->|保存| Home
-    Voice --> VoicePick["認識候補から選択"]
-    VoicePick -->|保存| Home
+    Voice --> VoicePick["認識候補から選択"]:::proc -->|保存| Home
+    Detail -->|戻る / 削除| Home
 
-    Detail -->|ブックマーク ON/OFF| Detail
-    Detail -->|音声再生（端末TTS）| Detail
-    Detail -->|解説を再生成| Detail
-    Detail -->|削除| Home
-    Detail -->|戻る| Home
-
-    ReviewCfg -->|開始| Session["復習セッション（タイピング想起）"]
-    Session --> Result["結果"]
+    ReviewCfg -->|開始| Session["復習セッション<br/>(タイピング想起)"]:::screen --> Result["結果"]:::screen
     Result -->|もう一度| ReviewCfg
     Result -->|終了| Home
 
-    Settings -->|Googleログイン| Upgrade["匿名 → Google 昇格"]
-    Upgrade --> Settings
+    Settings -->|Googleログイン| Upgrade["匿名 → Google 昇格"]:::proc --> Settings
     Settings -->|戻る| Home
+
+    classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
+    classDef proc   fill:#E0F2F1,stroke:#00897B,color:#004D40;
+    classDef dec    fill:#FFFDE7,stroke:#F9A825,color:#827717;
+    classDef term   fill:#ECEFF1,stroke:#546E7A,color:#263238;
 ```
 
 ---
@@ -53,26 +72,32 @@ flowchart TD
 ### 2-A. 共有から保存（アプリを開かず）
 
 ```mermaid
-flowchart TD
-    Ext["他アプリで英語を選択 → 共有ボタン"] --> Sheet["共有シート / 共有インテントで Rakuku を選択"]
-    Sheet --> MiniUI["保存ミニUI（オーバーレイ）<br/>アプリ本体は開かない"]
-    MiniUI -->|保存| Done["保存完了（トースト表示）"]
-    Done --> BackExt["元のアプリに戻る"]
-    MiniUI -.->|アプリで開く（任意）| HomeRef["ホーム / 一覧へ"]
+flowchart LR
+    Ext(["他アプリで英語を選択<br/>→ 共有ボタン"]):::term --> Sheet(["共有シート / インテントで<br/>Rakuku を選択"]):::term
+    Sheet --> MiniUI["保存ミニUI（オーバーレイ）<br/>アプリ本体は開かない"]:::screen
+    MiniUI -->|保存| Done["保存完了（トースト）"]:::proc
+    Done --> BackExt(["元のアプリに戻る"]):::term
+    MiniUI -.->|アプリで開く（任意）| HomeRef["ホーム / 一覧へ"]:::screen
+
+    classDef term   fill:#ECEFF1,stroke:#546E7A,color:#263238;
+    classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
+    classDef proc   fill:#E0F2F1,stroke:#00897B,color:#004D40;
 ```
 
 ### 2-B. 手動入力 ／ 2-C. 音声入力（アプリ内）
 
 ```mermaid
-flowchart TD
-    Home["ホーム / 一覧"] -->|＋ 手動入力| Manual["テキスト入力 / 貼り付け"]
-    Manual -->|保存| Save["保存 → AI生成は非同期で開始"]
+flowchart LR
+    Home["ホーム / 一覧"]:::screen -->|＋ 手動入力| Manual["テキスト入力 / 貼り付け"]:::screen
+    Home -->|音声入力| Speak["英語を発話"]:::screen
 
-    Home -->|音声入力| Speak["英語を発話"]
-    Speak --> STT["端末STTがテキスト化<br/>認識候補（複数）を提示"]
-    STT --> Pick["候補から選択"]
-    Pick -->|保存| Save
-    Save --> Back["一覧へ（生成中はプレースホルダ表示）"]
+    Manual --> Save["保存<br/>(gen_status = new)"]:::proc
+    Speak --> STT["端末STTがテキスト化<br/>認識候補を提示"]:::proc --> Pick["候補から選択"]:::screen --> Save
+
+    Save --> Gen["AI生成を非同期で開始"]:::proc --> Back["一覧へ<br/>(生成中はプレースホルダ表示)"]:::screen
+
+    classDef screen fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
+    classDef proc   fill:#E0F2F1,stroke:#00897B,color:#004D40;
 ```
 
 > 保存直後は `gen_status = new`。AI解説（意味・コアイメージ・ニュアンス・例文）はバックグラウンドで生成され、完了後に詳細へ反映される。
@@ -81,34 +106,39 @@ flowchart TD
 
 ## 3. 復習フロー（タイピング想起）
 
+> 出題 → 操作（入力／ヒント／答えを見る）→ ステータス更新 → 次の問題、を繰り返す。ステータスは結果に応じて4色に分岐。
+
 ```mermaid
 flowchart TD
-    Cfg["復習設定<br/>出題数 5/10/20/50/100・対象=全件/ブックマーク"] --> Begin["出題開始（ステータス優先順）"]
-    Begin --> Q["問題表示（意味＝日本語）"]
-    Q --> Op{"ユーザー操作"}
+    Cfg["復習設定<br/>出題数 5/10/20/50/100・対象=全件/ブックマーク"]:::screen --> Q["問題表示<br/>(意味＝日本語)"]:::screen
+    Q --> Op{"ユーザー操作"}:::dec
 
-    Op -->|英語を入力して送信| Judge{"完全一致?"}
-    Op -->|ヒント| Hint["先頭1文字を表示"]
-    Op -->|答えを見る| Reveal["灰色で全文表示"]
+    Op -->|ヒント| Hint["先頭1文字を表示"]:::proc --> Q
+    Op -->|英語を入力| Judge{"完全一致?"}:::dec
+    Op -->|答えを見る| Reveal["灰色で全文表示"]:::proc
 
-    Hint --> Q
-    Reveal --> SetWeak1["status = 苦手"]
-    Judge -->|正解・ヒント未使用| SetLearned["status = 覚えた"]
-    Judge -->|正解・ヒント使用| SetVague["status = うろ覚え"]
-    Judge -->|不正解| SetWeak2["status = 苦手"]
+    Judge -->|正解・ヒント未使用| SLearned["status = 覚えた"]:::learned
+    Judge -->|正解・ヒント使用| SVague["status = うろ覚え"]:::vague
+    Judge -->|不正解| SWeak["status = 苦手"]:::weak
+    Reveal --> SWeak2["status = 苦手"]:::weak
 
-    SetLearned --> Next
-    SetVague --> Next
-    SetWeak1 --> Next
-    SetWeak2 --> Next
+    SLearned --> Next{"残り問題?"}:::dec
+    SVague --> Next
+    SWeak --> Next
+    SWeak2 --> Next
 
-    Next{"残り問題?"} -->|あり| Q
-    Next -->|なし| Result["結果表示<br/>正答数・ステータス内訳"]
-    Result -->|もう一度| Cfg
-    Result -->|終了| HomeEnd["ホーム / 一覧"]
+    Next -->|あり| Q
+    Next -->|なし| Result["結果表示<br/>正答数・ステータス内訳"]:::screen
+
+    classDef screen  fill:#E3F2FD,stroke:#1976D2,color:#0D47A1;
+    classDef proc    fill:#E0F2F1,stroke:#00897B,color:#004D40;
+    classDef dec     fill:#FFFDE7,stroke:#F9A825,color:#827717;
+    classDef learned fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20;
+    classDef vague   fill:#FFF9C4,stroke:#F9A825,color:#827717;
+    classDef weak    fill:#FFCDD2,stroke:#C62828,color:#B71C1C;
 ```
 
-> ステータス判定の詳細は要件定義書 §5.9 を参照。
+> ⚪ 未復習 は「復習0回」の初期状態（図では遷移後のため省略）。判定の詳細は要件定義書 §5.9 を参照。
 
 ---
 

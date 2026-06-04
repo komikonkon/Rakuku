@@ -189,13 +189,13 @@ sequenceDiagram
             U->>App: ヒント押下（先頭1文字表示）
         else 答えを見る
             U->>App: 答え押下（灰色ゴースト表示＋誤字ブロック=タイプ強制）
-            App->>App: 正否=✗ / status=苦手 を記録
+            App->>App: 判定=苦手 を確定
         end
         Note over App,U: 入力が正解と完全一致するまでループ内で再回答
-        App->>App: 正否（初回一致か）からステータス算出
+        App->>App: 初回操作から判定（覚えた/うろ覚え/苦手）を算出
         App->>DB: review_states 更新（status / last_*・review_count++）
     end
-    App->>U: 結果表示（出題アイテム一覧＋正否○/✗・正答数・ステータス内訳）
+    App->>U: 結果表示（出題一覧＋判定3区分・正答数=覚えた件数・ステータス内訳）
 ```
 
 ---

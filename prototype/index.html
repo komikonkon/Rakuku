@@ -109,6 +109,10 @@
   .kpi { font-size:40px; font-weight:800; color:var(--primary); }
   .hintbox { background:var(--primary-weak); border-radius:10px; padding:10px 12px; font-size:13px; }
   .reveal { color:var(--muted); }
+  .typed { color:var(--text); font-weight:700; }
+  .ghost { color:var(--muted); opacity:.55; font-weight:600; }
+  .caret { display:inline-block; width:2px; height:1.05em; background:var(--primary); vertical-align:-2px; margin-left:1px; animation:blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity:0; } }
 </style>
 </head>
 <body>
@@ -300,6 +304,7 @@
           <button class="ghost-btn" style="flex:1">👁 答えを見る</button>
         </div>
         <button class="primary-btn" style="margin-top:10px">回答する</button>
+        <div class="muted" style="margin-top:8px; text-align:center">何度でも回答可。初回で外すと「苦手」。正解を入力し終えるまで次へ進めません。</div>
       </div>
     </div>
   </div>
@@ -314,11 +319,12 @@
         <div class="section-label">この意味の英語は？</div>
         <div class="card" style="font-size:16px; font-weight:600">遠回しに言う、核心を避ける</div>
 
-        <div class="section-label">答え</div>
-        <div class="card reveal" style="font-size:18px; font-weight:700">beat around the bush</div>
+        <div class="section-label">答え（なぞって入力）</div>
+        <div class="field" style="font-size:16px; letter-spacing:.5px"><span class="typed">beat around the b</span><span class="ghost">ush</span><span class="caret"></span></div>
+        <div class="hintbox" style="margin-top:10px">⌨️ カラオケ式：薄い文字をなぞって入力。誤字はブロックされ、正しい綴りだけ入力できます。</div>
         <div class="meta" style="margin-top:10px"><span class="badge b-weak">苦手に分類</span></div>
 
-        <button class="primary-btn" style="margin-top:18px">次の問題へ</button>
+        <button class="primary-btn" style="margin-top:18px">次の問題へ（正解を打ち切ると有効）</button>
       </div>
     </div>
   </div>
@@ -328,15 +334,36 @@
     <div class="screen">
       <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
       <div class="appbar"><span class="title" style="font-size:14px">結果</span><span class="ic"> </span></div>
-      <div class="body center">
-        <div class="muted">今回の正答</div>
-        <div class="kpi">7 / 10</div>
-        <div class="donut-row">
-          <span class="badge b-learned">覚えた 4</span>
-          <span class="badge b-vague">うろ覚え 3</span>
-          <span class="badge b-weak">苦手 3</span>
+      <div class="body">
+        <div class="card" style="text-align:center; padding:14px">
+          <div class="muted">正答（覚えた）</div>
+          <div class="kpi" style="font-size:34px">4 / 10</div>
+          <div class="donut-row">
+            <span class="badge b-learned">覚えた 4</span>
+            <span class="badge b-vague">うろ覚え 3</span>
+            <span class="badge b-weak">苦手 3</span>
+          </div>
         </div>
-        <div style="width:100%; margin-top:20px">
+
+        <div class="section-label">出題したアイテム（タップで詳細）</div>
+        <div class="item">
+          <div class="row"><span class="en">resilient</span><span class="badge b-learned">覚えた</span></div>
+          <div class="ja">回復力のある、立ち直りが早い</div>
+        </div>
+        <div class="item">
+          <div class="row"><span class="en">take it with a grain of salt</span><span class="badge b-vague">うろ覚え</span></div>
+          <div class="ja">話半分に聞く／鵜呑みにしない</div>
+        </div>
+        <div class="item">
+          <div class="row"><span class="en">beat around the bush</span><span class="badge b-weak">苦手</span></div>
+          <div class="ja">遠回しに言う、核心を避ける</div>
+        </div>
+        <div class="item">
+          <div class="row"><span class="en">serendipity</span><span class="badge b-learned">覚えた</span></div>
+          <div class="ja">思いがけない幸運な発見</div>
+        </div>
+
+        <div style="margin-top:14px">
           <button class="primary-btn">もう一度</button>
           <button class="ghost-btn" style="margin-top:10px">一覧に戻る</button>
         </div>

@@ -26,15 +26,15 @@ erDiagram
     }
 
     COLLECTIONS {
-        uuid        id          PK
-        uuid        user_id     FK "所有ユーザー"
-        text        name        "単語帳名（MVPは既定1件）"
+        uuid        collection_id PK "UUIDv7"
+        uuid        user_id       FK "所有ユーザー → auth.users.id"
+        text        name          "単語帳名（MVPは既定1件）"
         timestamptz created_at
     }
 
     ITEMS {
-        uuid        id            PK
-        uuid        user_id       FK "所有ユーザー"
+        uuid        item_id       PK "UUIDv7"
+        uuid        user_id       FK "所有ユーザー → auth.users.id"
         uuid        collection_id FK "所属コレクション（nullable）"
         text        source_text   "保存した英語原文"
         text        item_type     "word | phrase"
@@ -48,28 +48,28 @@ erDiagram
     }
 
     EXPLANATIONS {
-        uuid        id          PK
-        uuid        item_id     FK "対象アイテム"
-        text        meaning     "意味・訳（日本語）"
-        text        core_image  "コアイメージ（日本語）"
-        text        nuance      "ニュアンス（日本語）"
-        jsonb       examples    "例文 [{en, ja}]"
-        text        model       "生成モデル名"
+        uuid        explanation_id PK "UUIDv7"
+        uuid        item_id        FK "対象アイテム → items.item_id"
+        text        meaning        "意味・訳（日本語）"
+        text        core_image     "コアイメージ（日本語）"
+        text        nuance         "ニュアンス（日本語）"
+        jsonb       examples       "例文 [{en, ja}]"
+        text        model          "生成モデル名"
         timestamptz created_at
     }
 
     AUDIOS {
-        uuid        id           PK
-        uuid        item_id      FK "対象アイテム"
+        uuid        audio_id     PK "UUIDv7"
+        uuid        item_id      FK "対象アイテム → items.item_id"
         text        target       "expression | example"
         text        storage_path "クラウドTTS時のみ（端末TTSは不要）"
         timestamptz created_at
     }
 
     REVIEW_STATES {
-        uuid        id               PK
-        uuid        item_id          FK "対象アイテム（1対1）"
-        uuid        user_id          FK "所有ユーザー"
+        uuid        review_state_id  PK "UUIDv7"
+        uuid        item_id          FK "対象アイテム（1対1, UNIQUE）"
+        uuid        user_id          FK "所有ユーザー → auth.users.id"
         text        status           "not_reviewed | weak | vague | learned"
         timestamptz last_reviewed_at "直近の復習日時（nullable）"
         boolean     last_used_hint   "直近でヒント使用（nullable）"
@@ -79,7 +79,18 @@ erDiagram
     }
 ```
 
-> `AUTH_USERS` は Supabase Auth（`auth.users`）が管理する既存テーブル。アプリ側テーブルは `user_id` で参照する。
+> `AUTH_USERS` は Supabase Auth（`auth.users`）が管理する既存テーブル。PKは `id` 固定（変更不可）。アプリ側テーブルは `user_id` で参照する。
+
+### PK・命名規約（確定）
+
+- **PK名は `<entity>_id`**（例：`items.item_id`）。粒度を自己説明的にし、結合・エクスポート・手書きSQLで曖昧にしない。
+  - 例外：Supabase管理の `auth.users.id` のみ `id`（変更不可）。これを参照するFKは慣例どおり `user_id`。
+- **FK名は参照先のPK名をそのまま使う**（`item_id` / `collection_id` / `user_id`）。同じ列名はDB全体で同じ意味。
+- **PKの型は UUIDv7**（時系列）。理由：
+  - **オフライン保存→同期**のためクライアント側でID生成できる（中央採番不要）。
+  - v7は先頭が時刻順で**単調増加に近く、B-treeの挿入局所性が良い**（v4のランダム性によるインデックス肥大を回避）。
+  - 列挙されにくくセキュア。
+- **生成方法**：クライアント（Dart）でUUIDv7を生成して保存するのを基本とする。DB側デフォルトは保険として、`uuidv7()`（Postgres 18）または `pg_uuidv7` 拡張を利用。利用可否は実装時に確認（不可なら一時的に `gen_random_uuid()`＝v4で代替し、後日v7へ）。
 
 ---
 

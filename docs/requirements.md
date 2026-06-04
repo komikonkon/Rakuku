@@ -311,6 +311,7 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 ## 8. データモデル（主要テーブル・初版）
 
 > 詳細なカラム・制約は実装時に確定。RLSは全テーブルで `user_id = auth.uid()` を基本とする。
+> **PK規約**：PK名は `<entity>_id`（粒度明示）、型は **UUIDv7**（時系列・クライアント生成可）。Supabase管理の `auth.users.id` のみ `id`。詳細は [ER図](./er-diagram.md) を参照。
 
 ### users（Supabase Auth 管理）
 - 認証はSupabase Authが管理。アプリ固有のプロフィールが必要なら `profiles` を追加。
@@ -318,8 +319,8 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 ### items（保存アイテム）
 | カラム | 型 | 説明 |
 |---|---|---|
-| id | uuid (PK) | |
-| user_id | uuid (FK) | 所有ユーザー |
+| item_id | uuid (PK) | UUIDv7 |
+| user_id | uuid (FK) | 所有ユーザー → auth.users.id |
 | collection_id | uuid (FK, nullable) | 所属コレクション |
 | source_text | text | 保存した英語原文 |
 | item_type | text | `word`（英単語）/ `phrase`（英語フレーズ） |
@@ -334,8 +335,8 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 ### explanations（AI生成解説）
 | カラム | 型 | 説明 |
 |---|---|---|
-| id | uuid (PK) | |
-| item_id | uuid (FK) | |
+| explanation_id | uuid (PK) | UUIDv7 |
+| item_id | uuid (FK) | → items.item_id |
 | meaning | text | 意味・訳（日本語） |
 | core_image | text | コアイメージ解説（日本語） |
 | nuance | text | ニュアンス解説（日本語） |
@@ -346,8 +347,8 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 ### audios（音声）
 | カラム | 型 | 説明 |
 |---|---|---|
-| id | uuid (PK) | |
-| item_id | uuid (FK) | |
+| audio_id | uuid (PK) | UUIDv7 |
+| item_id | uuid (FK) | → items.item_id |
 | target | text | `expression` / `example` |
 | storage_path | text | Storage上のパス（クラウドTTS時） |
 | created_at | timestamptz | |
@@ -355,9 +356,9 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 ### review_states（学習状態）
 | カラム | 型 | 説明 |
 |---|---|---|
-| id | uuid (PK) | |
-| item_id | uuid (FK) | |
-| user_id | uuid (FK) | |
+| review_state_id | uuid (PK) | UUIDv7 |
+| item_id | uuid (FK) | → items.item_id（UNIQUE・1対1） |
+| user_id | uuid (FK) | → auth.users.id |
 | status | text | `not_reviewed` / `weak`(苦手) / `vague`(うろ覚え) / `learned`(覚えた)。既定 `not_reviewed` |
 | last_reviewed_at | timestamptz (nullable) | 直近の復習日時 |
 | last_used_hint | boolean (nullable) | 直近でヒントを使ったか |
@@ -371,8 +372,8 @@ MVPの復習形式は**タイピング想起の1モードのみ**。
 ### collections（コレクション）※将来の複数対応用
 | カラム | 型 | 説明 |
 |---|---|---|
-| id | uuid (PK) | |
-| user_id | uuid (FK) | |
+| collection_id | uuid (PK) | UUIDv7 |
+| user_id | uuid (FK) | → auth.users.id |
 | name | text | |
 | created_at | timestamptz | |
 

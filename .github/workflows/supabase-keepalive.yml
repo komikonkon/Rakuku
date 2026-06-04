@@ -1,0 +1,47 @@
+name: Supabase Keepalive
+
+# Supabase の無料プロジェクトは「1週間アクセスが無い」と自動停止される。
+# それを避けるため、毎日 Supabase へ軽いリクエストを送って活動を発生させる。
+#
+# 注意:
+#  - スケジュール実行(cron)は「デフォルトブランチ上のワークフロー」しか動かない。
+#    実際に日次実行させるには、本ワークフローをデフォルトブランチへマージする必要がある。
+#  - GitHub はリポジトリが60日間無活動だとスケジュールを自動停止する。
+#  - 動作には Repository secrets に SUPABASE_URL と SUPABASE_ANON_KEY を設定すること。
+
+on:
+  schedule:
+    # 毎日 06:00 UTC（= 15:00 JST）
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase to prevent free-tier pause
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::SUPABASE_URL / SUPABASE_ANON_KEY secrets are not set. Configure them in repo settings."
+            exit 1
+          fi
+
+          # 1) Auth ヘルスエンドポイント（活動として最低限のヒット）
+          echo "Pinging auth health endpoint..."
+          curl -fsS "${SUPABASE_URL}/auth/v1/health" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -o /dev/null -w "auth health: %{http_code}\n"
+
+          # 2) keepalive テーブルへ実クエリを投げ、DB活動を確実に発生させる
+          echo "Querying keepalive table to register DB activity..."
+          curl -fsS "${SUPABASE_URL}/rest/v1/keepalive?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -o /dev/null -w "rest query: %{http_code}\n"
+
+          echo "Keepalive ping complete."

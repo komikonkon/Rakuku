@@ -49,6 +49,27 @@
 
 ---
 
+## ブランチ運用の不整合・注意（branchリネーム起因 / 2026-06-04）
+
+デフォルトブランチを `claude/rakuku-app-requirements-CawyG` → `main` にリネームし、
+そのままだと環境のgitプロキシが `main` へのpushを **403** で拒否したため、
+「**main維持＋作業ブランチ `claude/rakuku-app-requirements-CawyG` 運用**」に変更した。それに伴う事項：
+
+### 要対応
+- [ ] **main へ作業ブランチを取り込む**：`claude/rakuku-app-requirements-CawyG`（最新）→ `main` を**常設PRでマージ**。これをしないと `main` が古いまま（現状 `project-status.md` 等が main 未反映）。
+- [ ] **常設PRの作成**（claude/... → main）。以降のpushもこのPRに集約し、区切りでMerge。
+- [ ] **プレビューURLの基準を main に**：共有用の githack/htmlpreview リンクは将来 `main` 参照に統一（例 `.../komikonkon/Rakuku/main/prototype/index.html`）。リポジトリ内にハードコードは無いので、次に共有する時に差し替えればよい。
+
+### 確認済み・問題なし
+- ✅ **cron/keepalive**：ワークフローはブランチ名をハードコードしておらず、cronは**デフォルトブランチ（=main）**で実行。main に最終版ワークフロー（Legacy anon JWT・GRANT反映）が入っているため正常稼働。
+- ✅ **ブランチ名のハードコード無し**：リポジトリ内（docs/workflows/prototype）に `claude/rakuku-app-requirements-CawyG` の直接参照は0件。
+- ✅ **Secrets**（`SUPABASE_URL`/`SUPABASE_ANON_KEY`）はリポジトリ単位でブランチ非依存。
+
+### 既知の別件（rename無関係）
+- コミットの "Unverified" バッジ … 署名鍵がこの環境に無いだけ。履歴・コードに影響なし。必要なら後日対応。
+
+---
+
 ## 技術選定（フェーズ2入口で確定する）
 
 | 項目 | 推奨 | 状態 |

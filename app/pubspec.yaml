@@ -1,0 +1,39 @@
+name: rakuku
+description: "Rakuku - 出会った英語表現を保存し、AI解説・音声・復習で定着させるアプリ"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+# 注意: バージョンは目安。初回は `flutter pub get`、必要なら
+# `flutter pub upgrade --major-versions` で解決すること。
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 状態管理 / DI
+  flutter_riverpod: ^2.6.1
+  # ルーティング
+  go_router: ^14.6.2
+  # バックエンド（Auth / PostgREST / Edge Functions）
+  supabase_flutter: ^2.8.4
+  # ローカルDB（offline-first）
+  drift: ^2.23.1
+  sqlite3_flutter_libs: ^0.5.26
+  path_provider: ^2.1.5
+  path: ^1.9.0
+  # UUIDv7（クライアント生成）
+  uuid: ^4.5.1
+  # 整形
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+  drift_dev: ^2.23.1
+
+flutter:
+  uses-material-design: true

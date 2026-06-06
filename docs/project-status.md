@@ -43,7 +43,7 @@
 | フェーズ | 内容 | 状態 |
 |---|---|---|
 | 1. 基盤 | DBスキーマ・RLS・Supabase Auth(匿名)・keepalive | ✅ ほぼ完了（Google/Edgeは各実装段で） |
-| 2. アプリ骨組み | Flutter初期化・テーマ(ColorScheme)・supabase接続・データ層 | ▶ 着手 |
+| 2. アプリ骨組み | Flutter初期化・テーマ(ColorScheme)・supabase接続・データ層 | ▶ 進行中（バッチ1完了：雛形/テーマ/ルーティング/接続。次：データ層） |
 | 3. 機能実装 | 保存→一覧→詳細(AI解説/TTS)→復習→ブックマーク→設定/認証昇格 | 未 |
 | 4. 仕上げ | テスト・CI・ベータ配信 | 未 |
 
@@ -72,10 +72,16 @@
 
 ## 技術選定（フェーズ2入口で確定する）
 
-| 項目 | 推奨 | 状態 |
+| 項目 | 採用 | 状態 |
 |---|---|---|
-| 状態管理 | Riverpod | ⬜ 未確定 |
-| ローカルDB | Drift（SQLite, offline-first） | ⬜ 未確定 |
-| ルーティング | go_router | ⬜ 未確定 |
+| 状態管理 | **Riverpod** | ✅ 確定 |
+| ローカルDB | **Drift（SQLite, offline-first）** | ✅ 確定 |
+| ルーティング | **go_router** | ✅ 確定 |
+| Flutter作成 | ローカルで `flutter create .`（platformは各自生成・gitignore） | ✅ 確定 |
 
-> 確定したら本表と [architecture-layers.md](./design/architecture-layers.md) を更新する。
+### フェーズ2 残タスク
+- [ ] データ層：Driftスキーマ（サーバと同型）＋モデル＋DAO
+- [ ] Repository（Item/Explanation/Review/Auth）＋ Supabase同期（LWW）
+- [ ] 各画面の実装（一覧→詳細→復習→ブックマーク→設定）
+- [ ] アプリが使うAPIキー確認（publishable で疎通するか）
+- [ ] （後で）プラットフォーム固有設定：STT/TTS権限・共有受け取り・ディープリンク（gitignore解除して個別コミット）
